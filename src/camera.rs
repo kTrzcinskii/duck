@@ -1,5 +1,6 @@
 use std::f32::consts;
 
+use bytemuck::{Pod, Zeroable};
 use glam::{Mat4, Vec3};
 
 use crate::input::InputState;
@@ -85,7 +86,7 @@ impl Projection {
 }
 
 #[repr(C)]
-#[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Debug, Clone, Copy, Pod, Zeroable)]
 pub struct CameraBuffer {
     view_projection_matrix: [[f32; 4]; 4],
     inverse_projection_matrix: [[f32; 4]; 4],
