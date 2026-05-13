@@ -6,13 +6,16 @@ use std::{
 use log::info;
 use winit::{
     application::ApplicationHandler,
-    event::WindowEvent,
+    event::{DeviceEvent, DeviceId, WindowEvent},
     event_loop::ActiveEventLoop,
     window::{Window, WindowAttributes, WindowId},
 };
 
+use crate::input::InputState;
+
 pub struct AppContext {
     window: Arc<Window>,
+    input: InputState,
     last_render_time: Instant,
 }
 
@@ -43,6 +46,7 @@ impl ApplicationHandler for App {
 
         let ctx = AppContext {
             window,
+            input: InputState::default(),
             last_render_time: Instant::now(),
         };
 
@@ -62,6 +66,8 @@ impl ApplicationHandler for App {
             None => return,
         };
 
+        ctx.input.on_window_event(&event);
+
         match event {
             WindowEvent::CloseRequested => {
                 info!("Application stopped");
@@ -69,9 +75,21 @@ impl ApplicationHandler for App {
             }
             WindowEvent::RedrawRequested => {
                 let dt = ctx.delta_time();
+                ctx.input.end_frame();
                 ctx.window.request_redraw();
             }
             _ => {}
+        }
+    }
+
+    fn device_event(
+        &mut self,
+        _event_loop: &ActiveEventLoop,
+        _device_id: DeviceId,
+        event: DeviceEvent,
+    ) {
+        if let Some(ctx) = &mut self.ctx {
+            ctx.input.on_device_event(&event);
         }
     }
 }
