@@ -210,8 +210,11 @@ impl WaterComputeBindGroup {
 
     pub fn disturb(&self, queue: &wgpu::Queue, col: u32, row: u32, amount: f32) {
         let offset = ((row * Self::BUFFER_SIZE as u32 + col) * size_of::<f32>() as u32) as u64;
-        let buf = self.current_buffer();
-        queue.write_buffer(buf, offset, bytemuck::cast_slice(&[amount]));
+        queue.write_buffer(
+            self.current_buffer(),
+            offset,
+            bytemuck::cast_slice(&[amount]),
+        );
     }
 
     fn current_buffer(&self) -> &wgpu::Buffer {

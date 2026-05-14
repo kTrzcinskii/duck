@@ -133,6 +133,7 @@ impl ApplicationHandler for App {
                 ctx.window.request_redraw();
             }
             WindowEvent::Resized(size) => {
+                log::info!("Resize: {}x{}", size.width, size.height);
                 ctx.resize(size.width, size.height);
             }
             _ => {}
