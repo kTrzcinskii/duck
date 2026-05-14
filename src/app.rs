@@ -47,6 +47,11 @@ impl AppContext {
             error!("Failed to render a frame: {e}");
         }
     }
+
+    fn resize(&mut self, width: u32, height: u32) {
+        self.renderer.resize(width, height);
+        self.projection.resize(width, height);
+    }
 }
 
 #[derive(Default)]
@@ -126,6 +131,9 @@ impl ApplicationHandler for App {
                 ctx.render(dt);
                 ctx.input.end_frame();
                 ctx.window.request_redraw();
+            }
+            WindowEvent::Resized(size) => {
+                ctx.resize(size.width, size.height);
             }
             _ => {}
         }

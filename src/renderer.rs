@@ -63,21 +63,7 @@ impl Renderer {
 
         surface.configure(&device, &config);
 
-        let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
-            size: wgpu::Extent3d {
-                width: config.width,
-                height: config.height,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Depth32Float,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            label: Some("Depth Texture"),
-            view_formats: &[],
-        });
-        let depth_texture_view = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let depth_texture_view = Self::create_depth_texture(&device, &config);
 
         let layouts = RendererBindGroupsLayout::new(&device);
         let global_bg = GlobalBindGroup::new(&device, layouts.global());
@@ -172,5 +158,37 @@ impl Renderer {
 
     pub fn surface_config(&self) -> &wgpu::SurfaceConfiguration {
         &self.config
+    }
+
+    pub fn resize(&mut self, width: u32, height: u32) {
+        if width > 0 && height > 0 {
+            self.config.width = width;
+            self.config.height = height;
+            self.surface.configure(&self.device, &self.config);
+
+            self.depth_texture_view =
+                Self::create_depth_texture(self.device(), self.surface_config());
+        }
+    }
+
+    fn create_depth_texture(
+        device: &wgpu::Device,
+        config: &wgpu::SurfaceConfiguration,
+    ) -> wgpu::TextureView {
+        let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+            size: wgpu::Extent3d {
+                width: config.width,
+                height: config.height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Depth32Float,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            label: Some("Depth Texture"),
+            view_formats: &[],
+        });
+        depth_texture.create_view(&wgpu::TextureViewDescriptor::default())
     }
 }
