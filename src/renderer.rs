@@ -15,6 +15,7 @@ pub struct Renderer {
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
+    layouts: RendererBindGroupsLayout,
     depth_texture_view: wgpu::TextureView,
     global_bg: GlobalBindGroup,
 }
@@ -86,6 +87,7 @@ impl Renderer {
             device,
             queue,
             config,
+            layouts,
             depth_texture_view,
             global_bg,
         };
@@ -124,8 +126,8 @@ impl Renderer {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.1,
-                            g: 0.1,
+                            r: 0.15,
+                            g: 0.15,
                             b: 0.15,
                             a: 1.0,
                         }),
@@ -154,5 +156,21 @@ impl Renderer {
         output.present();
 
         Ok(())
+    }
+
+    pub fn device(&self) -> &wgpu::Device {
+        &self.device
+    }
+
+    pub fn queue(&self) -> &wgpu::Queue {
+        &self.queue
+    }
+
+    pub fn layouts(&self) -> &RendererBindGroupsLayout {
+        &self.layouts
+    }
+
+    pub fn surface_config(&self) -> &wgpu::SurfaceConfiguration {
+        &self.config
     }
 }
