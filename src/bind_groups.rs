@@ -1,3 +1,5 @@
+use wgpu::util::DeviceExt;
+
 use crate::{camera::CameraBuffer, light::LightBuffer};
 
 pub struct RendererBindGroupsLayout {
@@ -255,21 +257,20 @@ impl WaterComputeBindGroup {
         let buf_a = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Water buf_a"),
             size: (Self::BUFFER_SIZE * Self::BUFFER_SIZE * size_of::<f32>()) as u64,
-            usage: wgpu::BufferUsages::STORAGE,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
         let buf_b = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Water buf_b"),
             size: (Self::BUFFER_SIZE * Self::BUFFER_SIZE * size_of::<f32>()) as u64,
-            usage: wgpu::BufferUsages::STORAGE,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        // TODO: should be initialized with data from cpu
-        let buf_damp = device.create_buffer(&wgpu::BufferDescriptor {
+        let damp_data = Self::compute_damping();
+        let buf_damp = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Water buf_damp"),
-            size: (Self::BUFFER_SIZE * Self::BUFFER_SIZE * size_of::<f32>()) as u64,
+            contents: bytemuck::cast_slice(&damp_data),
             usage: wgpu::BufferUsages::STORAGE,
-            mapped_at_creation: false,
         });
 
         let normal_texture = device.create_texture(&wgpu::TextureDescriptor {
@@ -369,6 +370,21 @@ impl WaterComputeBindGroup {
         pass.dispatch_workgroups(256 / 16, 256 / 16, 1);
         drop(pass);
         self.frame += 1;
+    }
+
+    fn compute_damping() -> Vec<f32> {
+        let n = Self::BUFFER_SIZE;
+        let h = 2.0 / (n - 1) as f32;
+        let mut damping = vec![0.0; n * n];
+        for row in 0..n {
+            for col in 0..n {
+                let x = col as f32 * h - 1.0;
+                let y = row as f32 * h - 1.0;
+                let l = (1.0 - x.abs()).min(1.0 - y.abs());
+                damping[row * n + col] = 0.95 * (l / 0.2).min(1.0);
+            }
+        }
+        damping
     }
 }
 
