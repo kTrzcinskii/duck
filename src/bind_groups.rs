@@ -6,7 +6,7 @@ pub struct RendererBindGroupsLayout {
     global: wgpu::BindGroupLayout,
     water_render: wgpu::BindGroupLayout,
     water_compute: wgpu::BindGroupLayout,
-    model: wgpu::BindGroupLayout,
+    duck: wgpu::BindGroupLayout,
 }
 
 impl RendererBindGroupsLayout {
@@ -15,7 +15,7 @@ impl RendererBindGroupsLayout {
             global: Self::global_layout(device),
             water_render: Self::water_render_layout(device),
             water_compute: Self::water_compute_layout(device),
-            model: Self::model_layout(device),
+            duck: Self::duck_layout(device),
         }
     }
 
@@ -150,7 +150,7 @@ impl RendererBindGroupsLayout {
         })
     }
 
-    fn model_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
+    fn duck_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Model Bind Group Layout"),
             entries: &[wgpu::BindGroupLayoutEntry {
@@ -174,8 +174,8 @@ impl RendererBindGroupsLayout {
         &self.water_render
     }
 
-    pub fn model(&self) -> &wgpu::BindGroupLayout {
-        &self.model
+    pub fn duck(&self) -> &wgpu::BindGroupLayout {
+        &self.duck
     }
 
     pub fn water_compute(&self) -> &wgpu::BindGroupLayout {
@@ -251,7 +251,7 @@ pub struct WaterComputeBindGroup {
 }
 
 impl WaterComputeBindGroup {
-    const BUFFER_SIZE: usize = 256;
+    pub const BUFFER_SIZE: usize = 256;
 
     pub fn new(device: &wgpu::Device, layout: &wgpu::BindGroupLayout) -> Self {
         let buf_a = device.create_buffer(&wgpu::BufferDescriptor {
@@ -355,23 +355,6 @@ impl WaterComputeBindGroup {
         }
     }
 
-    pub fn current_bind_group(&self) -> &wgpu::BindGroup {
-        if self.frame.is_multiple_of(2) {
-            &self.bind_group_a
-        } else {
-            &self.bind_group_b
-        }
-    }
-
-    pub fn step(&mut self, encoder: &mut wgpu::CommandEncoder, pipeline: &wgpu::ComputePipeline) {
-        let mut pass = encoder.begin_compute_pass(&Default::default());
-        pass.set_pipeline(pipeline);
-        pass.set_bind_group(0, self.current_bind_group(), &[]);
-        pass.dispatch_workgroups(256 / 16, 256 / 16, 1);
-        drop(pass);
-        self.frame += 1;
-    }
-
     fn compute_damping() -> Vec<f32> {
         let n = Self::BUFFER_SIZE;
         let h = 2.0 / (n - 1) as f32;
@@ -385,6 +368,35 @@ impl WaterComputeBindGroup {
             }
         }
         damping
+    }
+
+    pub fn current_bind_group(&self) -> &wgpu::BindGroup {
+        if self.frame.is_multiple_of(2) {
+            &self.bind_group_a
+        } else {
+            &self.bind_group_b
+        }
+    }
+
+    pub fn step(&mut self, encoder: &mut wgpu::CommandEncoder, pipeline: &wgpu::ComputePipeline) {
+        let mut pass = encoder.begin_compute_pass(&Default::default());
+        pass.set_pipeline(pipeline);
+        pass.set_bind_group(0, self.current_bind_group(), &[]);
+        pass.dispatch_workgroups(
+            Self::BUFFER_SIZE as u32 / 16,
+            Self::BUFFER_SIZE as u32 / 16,
+            1,
+        );
+        drop(pass);
+        self.frame += 1;
+    }
+
+    pub fn disturb(&self, queue: &wgpu::Queue, col: u32, row: u32, amount: f32) {
+        todo!()
+    }
+
+    pub fn normal_texture(&self) -> &wgpu::Texture {
+        &self.normal_texture
     }
 }
 
