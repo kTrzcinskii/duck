@@ -3,3 +3,6 @@ pub mod bind_groups;
 pub mod camera;
 pub mod input;
 pub mod light;
+pub mod renderer;
+pub mod scene;
+pub mod water;
