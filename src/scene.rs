@@ -19,7 +19,7 @@ pub struct Scene {
 }
 
 impl Scene {
-    const WATER_SIMULATION_STEP: f32 = 1.0 / 30.0;
+    const WATER_SIMULATION_STEP: f32 = 1.0 / 45.0;
 
     pub fn new(
         device: &wgpu::Device,

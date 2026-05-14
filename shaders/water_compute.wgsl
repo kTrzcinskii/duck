@@ -34,7 +34,7 @@ fn cs_main(@builtin(global_invocation_id) id: vec3<u32>) {
     let right = current[idx(x + 1u, y)];
     let d = damp[idx(x, y)];
 
-    let new_z = 0.99 * (a * (up + down + left + right) + b * cur - prev);
+    let new_z = d * (a * (up + down + left + right) + b * cur - prev);
     next[idx(x, y)] = new_z;
 
     let dzdx = (right - left) / (2.0 * h);
