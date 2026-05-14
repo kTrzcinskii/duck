@@ -243,9 +243,11 @@ impl GlobalBindGroup {
 pub struct WaterComputeBindGroup {
     bind_group_a: wgpu::BindGroup,
     bind_group_b: wgpu::BindGroup,
+    bind_group_c: wgpu::BindGroup,
     buf_a: wgpu::Buffer,
     buf_b: wgpu::Buffer,
-    buf_damp: wgpu::Buffer,
+    buf_c: wgpu::Buffer,
+    _buf_damp: wgpu::Buffer,
     normal_texture: wgpu::Texture,
     frame: usize,
 }
@@ -262,6 +264,12 @@ impl WaterComputeBindGroup {
         });
         let buf_b = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Water buf_b"),
+            size: (Self::BUFFER_SIZE * Self::BUFFER_SIZE * size_of::<f32>()) as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let buf_c = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Water buf_c"),
             size: (Self::BUFFER_SIZE * Self::BUFFER_SIZE * size_of::<f32>()) as u64,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
@@ -290,66 +298,50 @@ impl WaterComputeBindGroup {
 
         let normal_view = normal_texture.create_view(&Default::default());
 
-        let bind_group_a = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: buf_a.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: buf_b.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: buf_b.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 3,
-                    resource: buf_damp.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 4,
-                    resource: wgpu::BindingResource::TextureView(&normal_view),
-                },
-            ],
-            label: Some("Water Compute Bind Group A"),
-        });
+        let make_bg = |current: &wgpu::Buffer,
+                       previous: &wgpu::Buffer,
+                       next: &wgpu::Buffer,
+                       label: Option<&'static str>| {
+            device.create_bind_group(&wgpu::BindGroupDescriptor {
+                layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: current.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: previous.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: next.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 3,
+                        resource: buf_damp.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 4,
+                        resource: wgpu::BindingResource::TextureView(&normal_view),
+                    },
+                ],
+                label,
+            })
+        };
 
-        let bind_group_b = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: buf_b.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: buf_a.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: buf_a.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 3,
-                    resource: buf_damp.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 4,
-                    resource: wgpu::BindingResource::TextureView(&normal_view),
-                },
-            ],
-            label: Some("Water Compute Bind Group B"),
-        });
+        let bind_group_a = make_bg(&buf_a, &buf_b, &buf_c, Some("Water Compute bind group A"));
+        let bind_group_b = make_bg(&buf_c, &buf_a, &buf_b, Some("Water Compute bind group B"));
+        let bind_group_c = make_bg(&buf_b, &buf_c, &buf_a, Some("Water Compute bind group C"));
 
         Self {
             bind_group_a,
             bind_group_b,
+            bind_group_c,
             buf_a,
             buf_b,
-            buf_damp,
+            buf_c,
+            _buf_damp: buf_damp,
             normal_texture,
             frame: 0,
         }
@@ -371,10 +363,10 @@ impl WaterComputeBindGroup {
     }
 
     pub fn current_bind_group(&self) -> &wgpu::BindGroup {
-        if self.frame.is_multiple_of(2) {
-            &self.bind_group_a
-        } else {
-            &self.bind_group_b
+        match self.frame % 3 {
+            0 => &self.bind_group_a,
+            1 => &self.bind_group_b,
+            _ => &self.bind_group_c,
         }
     }
 
@@ -392,7 +384,17 @@ impl WaterComputeBindGroup {
     }
 
     pub fn disturb(&self, queue: &wgpu::Queue, col: u32, row: u32, amount: f32) {
-        todo!()
+        let offset = ((row * Self::BUFFER_SIZE as u32 + col) * size_of::<f32>() as u32) as u64;
+        let buf = self.current_buffer();
+        queue.write_buffer(buf, offset, bytemuck::cast_slice(&[amount]));
+    }
+
+    fn current_buffer(&self) -> &wgpu::Buffer {
+        match self.frame % 3 {
+            0 => &self.buf_a,
+            1 => &self.buf_b,
+            _ => &self.buf_c,
+        }
     }
 
     pub fn normal_texture(&self) -> &wgpu::Texture {
