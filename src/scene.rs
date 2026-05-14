@@ -19,7 +19,7 @@ pub struct Scene {
 }
 
 impl Scene {
-    const WATER_SIMULATION_STEP: f32 = 1.0 / 60.0;
+    const WATER_SIMULATION_STEP: f32 = 1.0 / 30.0;
 
     pub fn new(
         device: &wgpu::Device,
@@ -54,13 +54,16 @@ impl Scene {
 
     fn update_water(&mut self, encoder: &mut wgpu::CommandEncoder, queue: &wgpu::Queue) {
         const CHANCE_FOR_DROP: f32 = 0.03;
-        const DROP_AMOUNT: f32 = 0.25;
+        const DROP_MIN_AMOUNT: f32 = 0.1;
+
+        const DROP_MAX_ADDITION: f32 = 0.3;
 
         while self.time_accumulator >= Self::WATER_SIMULATION_STEP {
             if rand::random::<f32>() < CHANCE_FOR_DROP {
                 let col = rand::random::<u32>() % WaterComputeBindGroup::BUFFER_SIZE as u32;
                 let row = rand::random::<u32>() % WaterComputeBindGroup::BUFFER_SIZE as u32;
-                self.water_simulation.disturb(queue, col, row, DROP_AMOUNT);
+                let amount = DROP_MIN_AMOUNT + rand::random::<f32>() * DROP_MAX_ADDITION;
+                self.water_simulation.disturb(queue, col, row, amount);
             }
             self.water_simulation.step(encoder);
             self.time_accumulator -= Self::WATER_SIMULATION_STEP;
