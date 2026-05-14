@@ -41,25 +41,7 @@ impl Renderer {
             })
             .await?;
 
-        let size = window.inner_size();
-        let surface_caps = surface.get_capabilities(&adapter);
-        let surface_format = surface_caps
-            .formats
-            .iter()
-            .copied()
-            .find(|f| f.is_srgb())
-            .unwrap_or(surface_caps.formats[0]);
-
-        let config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: surface_format,
-            width: size.width.max(1),
-            height: size.height.max(1),
-            present_mode: surface_caps.present_modes[0],
-            alpha_mode: surface_caps.alpha_modes[0],
-            view_formats: vec![],
-            desired_maximum_frame_latency: 2,
-        };
+        let config = Self::create_surface_config(window, &surface, &adapter);
 
         surface.configure(&device, &config);
 
@@ -190,5 +172,30 @@ impl Renderer {
             view_formats: &[],
         });
         depth_texture.create_view(&wgpu::TextureViewDescriptor::default())
+    }
+
+    fn create_surface_config(
+        window: Arc<Window>,
+        surface: &wgpu::Surface<'_>,
+        adapter: &wgpu::Adapter,
+    ) -> wgpu::SurfaceConfiguration {
+        let size = window.inner_size();
+        let surface_caps = surface.get_capabilities(adapter);
+        let surface_format = surface_caps
+            .formats
+            .iter()
+            .copied()
+            .find(|f| f.is_srgb())
+            .unwrap_or(surface_caps.formats[0]);
+        wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: surface_format,
+            width: size.width.max(1),
+            height: size.height.max(1),
+            present_mode: surface_caps.present_modes[0],
+            alpha_mode: surface_caps.alpha_modes[0],
+            view_formats: vec![],
+            desired_maximum_frame_latency: 2,
+        }
     }
 }
