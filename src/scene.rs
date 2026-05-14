@@ -3,9 +3,12 @@ use std::time::Duration;
 use glam::Vec3;
 
 use crate::{
-    bind_groups::{RendererBindGroupsLayout, WaterComputeBindGroup},
+    bind_groups::RendererBindGroupsLayout,
     light::Light,
-    water::{compute::WaterSimulation, render::WaterSurface},
+    water::{
+        compute::{WaterComputeBindGroup, WaterSimulation},
+        render::WaterSurface,
+    },
 };
 
 pub struct Scene {
