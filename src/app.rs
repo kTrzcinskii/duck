@@ -43,7 +43,7 @@ impl AppContext {
 
     fn render(&mut self, dt: Duration) {
         let camera_buffer = CameraBuffer::new(&self.camera, &self.projection);
-        if let Err(e) = self.renderer.render(camera_buffer, &mut self.scene) {
+        if let Err(e) = self.renderer.render(camera_buffer, &mut self.scene, dt) {
             error!("Failed to render a frame: {e}");
         }
     }

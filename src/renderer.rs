@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use anyhow::Result;
 use log::warn;
@@ -63,8 +63,15 @@ impl Renderer {
         Ok(renderer)
     }
 
-    pub fn render(&mut self, camera_buffer: CameraBuffer, scene: &mut Scene) -> Result<()> {
+    pub fn render(
+        &mut self,
+        camera_buffer: CameraBuffer,
+        scene: &mut Scene,
+        dt: Duration,
+    ) -> Result<()> {
         self.global_bg.update_camera(&self.queue, camera_buffer);
+        self.global_bg
+            .update_lighting(&self.queue, scene.light().into());
 
         let output = match self.surface.get_current_texture() {
             wgpu::CurrentSurfaceTexture::Success(t) => t,
@@ -84,7 +91,7 @@ impl Renderer {
         let view = output.texture.create_view(&Default::default());
         let mut encoder = self.device.create_command_encoder(&Default::default());
 
-        scene.update(&mut encoder, &self.queue);
+        scene.update(&mut encoder, &self.queue, dt);
 
         {
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
