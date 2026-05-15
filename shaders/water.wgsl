@@ -40,23 +40,82 @@ fn vs_main(@builtin(vertex_index) vid: u32) -> VertexOutput {
     return out;
 }
 
+const refraction_air_to_water: f32 = 1.0 / 1.33;
+const refraction_water_to_air: f32 = 1.33;
+const fresnel_coefficient: f32 = 0.14;
+
+const blue_addition: vec3<f32> = vec3<f32>(0.0, 0.05, 0.085);
+
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let encoded = textureSample(normal_tex, normal_sampler, in.uv).xyz;
-    let normal = normalize(encoded * 2.0 - 1.0);
+    let decoded_normal = normalize(encoded * 2.0 - 1.0);
+
+    var normal = decoded_normal;
 
     let cam_pos = camera.inverse_view[3].xyz;
-
-    let light_dir = normalize(light.position.xyz - in.world_pos);
     let view_dir = normalize(cam_pos - in.world_pos);
-    let reflect_dir = reflect(-light_dir, normal);
+
+    var eta = refraction_air_to_water;
+    if dot(normal, view_dir) < 0.0 {
+        normal = -normal;
+        eta = refraction_water_to_air;
+    }
+
+    let reflect_dir = reflect(-view_dir, normal);
+    let refract_dir = refract(-view_dir, normal, eta);
+
+    let color = water_color(in.world_pos, reflect_dir, refract_dir, normal, view_dir) + blue_addition;
+
+    return phong(vec4<f32>(color, 1.0), decoded_normal, in.world_pos, view_dir);
+}
+
+fn water_color(world_pos: vec3<f32>, reflect_dir: vec3<f32>, refract_dir: vec3<f32>, normal: vec3<f32>, view_dir: vec3<f32>) -> vec3<f32> {
+    var color: vec3<f32>;
+    let reflected_coords = intersect_ray(world_pos, reflect_dir);
+
+    if length(refract_dir) < 0.001 {
+        color = textureSample(cubemap, cubemap_sampler, reflected_coords).rgb;
+    } else {
+        let refracted_coords = intersect_ray(world_pos, refract_dir);
+        let reflected_color = textureSample(cubemap, cubemap_sampler, reflected_coords).rgb;
+        let refracted_color = textureSample(cubemap, cubemap_sampler, refracted_coords).rgb;
+
+        let f = fresnel(normal, view_dir);
+        color = mix(refracted_color, reflected_color, f);
+    }
+
+    return color;
+}
+
+fn phong(water_color: vec4<f32>, normal: vec3<f32>, world_pos: vec3<f32>, view_dir: vec3<f32>) -> vec4<f32> {
+    let light_dir = normalize(light.position.xyz - world_pos);
+    let light_reflect_dir = reflect(-light_dir, normal);
 
     let ambient = 0.1;
     let diffuse = max(dot(normal, light_dir), 0.0);
-    let specular = pow(max(dot(view_dir, reflect_dir), 0.0), 64.0);
+    let specular = pow(max(dot(view_dir, light_reflect_dir), 0.0), 64.0);
 
-    let water_color = vec4<f32>(0.1, 0.3, 0.6, 1.0);
-    let color = water_color * (ambient + diffuse) + light.color * specular * 0.8;
+    return water_color * (ambient + diffuse) + light.color * specular * 0.8;
+}
 
-    return color;
+fn intersect_ray(origin: vec3<f32>, dir: vec3<f32>) -> vec3<f32> {
+    var t_min = 1e10;
+
+    for (var axis = 0; axis < 3; axis++) {
+        let d = dir[axis];
+        if abs(d) > 0.0001 {
+            let t1 = (1.0 - origin[axis]) / d;
+            let t2 = (-1.0 - origin[axis]) / d;
+            if t1 > 0.0001 { t_min = min(t_min, t1); }
+            if t2 > 0.0001 { t_min = min(t_min, t2); }
+        }
+    }
+
+    return origin + t_min * dir;
+}
+
+fn fresnel(normal: vec3<f32>, view_dir: vec3<f32>) -> f32 {
+    let cos_theta = max(dot(normal, view_dir), 0.0);
+    return fresnel_coefficient + (1.0 - fresnel_coefficient) * pow(1.0 - cos_theta, 5.0);
 }

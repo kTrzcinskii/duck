@@ -77,28 +77,28 @@ pub struct Cubemap {
 impl Cubemap {
     const VERTICES: &[CubemapVertex] = &[
         CubemapVertex {
-            position: [-0.5, -0.5, -0.5],
+            position: [-1.0, -1.0, -1.0],
         },
         CubemapVertex {
-            position: [0.5, -0.5, -0.5],
+            position: [1.0, -1.0, -1.0],
         },
         CubemapVertex {
-            position: [0.5, 0.5, -0.5],
+            position: [1.0, 1.0, -1.0],
         },
         CubemapVertex {
-            position: [-0.5, 0.5, -0.5],
+            position: [-1.0, 1.0, -1.0],
         },
         CubemapVertex {
-            position: [-0.5, -0.5, 0.5],
+            position: [-1.0, -1.0, 1.0],
         },
         CubemapVertex {
-            position: [0.5, -0.5, 0.5],
+            position: [1.0, -1.0, 1.0],
         },
         CubemapVertex {
-            position: [0.5, 0.5, 0.5],
+            position: [1.0, 1.0, 1.0],
         },
         CubemapVertex {
-            position: [-0.5, 0.5, 0.5],
+            position: [-1.0, 1.0, 1.0],
         },
     ];
 
