@@ -15,23 +15,18 @@ struct VertexInput {
 
 struct VertexOutput {
     @builtin(position) clip_pos: vec4<f32>,
-    @location(0) dir: vec3<f32>,
+    @location(0) tex_cord: vec3<f32>,
 };
 
 @vertex
 fn vs_main(input: VertexInput) -> VertexOutput {
     var out: VertexOutput;
     out.clip_pos = camera.view_proj * vec4<f32>(input.position, 1.0);
-    out.dir = normalize(input.position);
+    out.tex_cord = normalize(input.position);
     return out;
 }
 
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
-    let dir = vec3<f32>(
-        input.dir.x,
-        input.dir.y,
-        -input.dir.z
-    );
-    return textureSample(cubemap, cubemap_sampler, dir);
+    return textureSample(cubemap, cubemap_sampler, input.tex_cord);
 }
