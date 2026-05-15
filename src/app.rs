@@ -81,7 +81,12 @@ impl ApplicationHandler for App {
         };
 
         let surface_config = renderer.surface_config();
-        let scene = Scene::new(renderer.device(), renderer.layouts(), surface_config.format);
+        let scene = Scene::new(
+            renderer.device(),
+            renderer.queue(),
+            renderer.layouts(),
+            surface_config.format,
+        );
 
         let camera = OrbitCamera::new(CAMERA_RADIUS);
         let projection = Projection::new(

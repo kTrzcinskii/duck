@@ -1,8 +1,10 @@
-use crate::bind_groups::RendererBindGroupsLayout;
+use crate::{bind_groups::RendererBindGroupsLayout, cubemap};
+
+use log::error;
 
 pub struct WaterRenderBindGroup {
     bind_group: wgpu::BindGroup,
-    cubemap: wgpu::Texture,
+    _cubemap: wgpu::Texture,
 }
 
 impl WaterRenderBindGroup {
@@ -50,6 +52,7 @@ impl WaterRenderBindGroup {
         device: &wgpu::Device,
         layout: &wgpu::BindGroupLayout,
         normal_texture: &wgpu::Texture,
+        cubemap: wgpu::Texture,
     ) -> Self {
         let normal_view = normal_texture.create_view(&Default::default());
 
@@ -60,22 +63,6 @@ impl WaterRenderBindGroup {
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
             ..Default::default()
-        });
-
-        // TODO: this is placeholder
-        let cubemap = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Water Cubemap"),
-            size: wgpu::Extent3d {
-                width: 1,
-                height: 1,
-                depth_or_array_layers: 6,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
         });
 
         let cubemap_view = cubemap.create_view(&wgpu::TextureViewDescriptor {
@@ -117,7 +104,7 @@ impl WaterRenderBindGroup {
         });
         WaterRenderBindGroup {
             bind_group,
-            cubemap,
+            _cubemap: cubemap,
         }
     }
 
@@ -194,11 +181,19 @@ pub struct WaterSurface {
 impl WaterSurface {
     pub fn new(
         device: &wgpu::Device,
+        queue: &wgpu::Queue,
         layouts: &RendererBindGroupsLayout,
         normal_texture: &wgpu::Texture,
         surface_format: wgpu::TextureFormat,
     ) -> Self {
-        let render_bg = WaterRenderBindGroup::new(device, layouts.water(), normal_texture);
+        let cubemap = match cubemap::load_cubemap(device, queue) {
+            Ok(c) => c,
+            Err(err) => {
+                error!("Failed to load cubemap: {err}");
+                panic!("{}", err);
+            }
+        };
+        let render_bg = WaterRenderBindGroup::new(device, layouts.water(), normal_texture, cubemap);
         let pipeline =
             WaterRenderPipeline::new(device, layouts.global(), layouts.water(), surface_format);
         Self {

@@ -121,6 +121,16 @@ impl Renderer {
                 ..Default::default()
             });
 
+            pass.set_pipeline(scene.cubemap().pipeline());
+            pass.set_bind_group(0, self.global_bg.bind_group(), &[]);
+            pass.set_bind_group(1, scene.water_surface().bind_group(), &[]);
+            pass.set_vertex_buffer(0, scene.cubemap().vertex_buffer().slice(..));
+            pass.set_index_buffer(
+                scene.cubemap().index_buffer().slice(..),
+                wgpu::IndexFormat::Uint16,
+            );
+            pass.draw_indexed(0..scene.cubemap().indices_len(), 0, 0..1);
+
             pass.set_pipeline(scene.water_surface().pipeline());
             pass.set_bind_group(0, self.global_bg.bind_group(), &[]);
             pass.set_bind_group(1, scene.water_surface().bind_group(), &[]);

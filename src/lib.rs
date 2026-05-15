@@ -1,6 +1,7 @@
 pub mod app;
 pub mod bind_groups;
 pub mod camera;
+pub mod cubemap;
 pub mod input;
 pub mod light;
 pub mod renderer;
