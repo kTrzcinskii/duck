@@ -1,6 +1,6 @@
 use crate::{
     camera::CameraBuffer,
-    duck::DuckBindGroup,
+    duck::render::DuckBindGroup,
     light::LightBuffer,
     water::{compute::WaterComputeBindGroup, render::WaterRenderBindGroup},
 };

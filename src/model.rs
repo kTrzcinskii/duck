@@ -31,6 +31,18 @@ impl Model {
     pub fn set_scale(&mut self, scale: Vec3) {
         self.scale = scale;
     }
+
+    pub fn translation(&self) -> Vec3 {
+        self.translation
+    }
+
+    pub fn rotation(&self) -> Quat {
+        self.rotation
+    }
+
+    pub fn scale(&self) -> Vec3 {
+        self.scale
+    }
 }
 
 #[repr(C)]

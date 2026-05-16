@@ -5,7 +5,7 @@ use glam::Vec3;
 use crate::{
     bind_groups::RendererBindGroupsLayout,
     cubemap::Cubemap,
-    duck::Duck,
+    duck::{controller::DuckController, render::Duck},
     light::Light,
     water::{
         compute::{WaterComputeBindGroup, WaterSimulation},
@@ -18,6 +18,7 @@ pub struct Scene {
     water_surface: WaterSurface,
     cubemap: Cubemap,
     duck: Duck,
+    duck_controller: DuckController,
     light: Light,
     time_accumulator: f32,
 }
@@ -47,6 +48,7 @@ impl Scene {
             water_surface,
             cubemap,
             duck,
+            duck_controller: DuckController::default(),
             light,
             time_accumulator: 0.0,
         }
@@ -59,7 +61,20 @@ impl Scene {
         dt: Duration,
     ) {
         self.time_accumulator += dt.as_secs_f32();
+        self.update_duck(queue, dt);
         self.update_water(encoder, queue);
+    }
+
+    fn update_duck(&mut self, queue: &wgpu::Queue, dt: Duration) {
+        const DUCK_DISTURB_AMOUNT: f32 = 0.15;
+        let (position, rotation) = self.duck_controller.update(dt.as_secs_f32());
+        self.duck.update_model(queue, |model| {
+            model.set_translation(position);
+            model.set_rotation(rotation);
+        });
+        let (col, row) = self.duck_controller.grid_position();
+        self.water_simulation
+            .disturb(queue, col, row, DUCK_DISTURB_AMOUNT);
     }
 
     fn update_water(&mut self, encoder: &mut wgpu::CommandEncoder, queue: &wgpu::Queue) {

@@ -124,7 +124,7 @@ impl DuckPipeline {
         duck_layout: &wgpu::BindGroupLayout,
         surface_format: wgpu::TextureFormat,
     ) -> Self {
-        let shader = device.create_shader_module(wgpu::include_wgsl!("../shaders/duck.wgsl"));
+        let shader = device.create_shader_module(wgpu::include_wgsl!("../../shaders/duck.wgsl"));
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Duck Pipeline Layout"),
             bind_group_layouts: &[Some(global_layout), Some(duck_layout)],
@@ -256,7 +256,7 @@ impl Duck {
         const NUMS_PER_VERTEX_LINE: usize = 8;
         const NUMS_PER_TRIANGLE_LINE: usize = 3;
 
-        let content = include_str!("../assets/meshes/duck.txt");
+        let content = include_str!("../../assets/meshes/duck.txt");
         let mut lines = content.lines();
         let vertex_count: usize = lines
             .next()
