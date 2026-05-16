@@ -5,6 +5,7 @@ use glam::Vec3;
 use crate::{
     bind_groups::RendererBindGroupsLayout,
     cubemap::Cubemap,
+    duck::Duck,
     light::Light,
     water::{
         compute::{WaterComputeBindGroup, WaterSimulation},
@@ -16,6 +17,7 @@ pub struct Scene {
     water_simulation: WaterSimulation,
     water_surface: WaterSurface,
     cubemap: Cubemap,
+    duck: Duck,
     light: Light,
     time_accumulator: f32,
 }
@@ -38,11 +40,13 @@ impl Scene {
             surface_format,
         );
         let cubemap = Cubemap::new(device, layouts, surface_format);
-        let light = Light::new(Vec3::new(0.0, 3.0, 0.0), Vec3::new(0.5, 0.2, 0.8));
+        let duck = Duck::new(device, layouts, surface_format, queue);
+        let light = Light::new(Vec3::new(0.0, 3.0, 0.0), Vec3::new(1.0, 1.0, 1.0));
         Scene {
             water_simulation,
             water_surface,
             cubemap,
+            duck,
             light,
             time_accumulator: 0.0,
         }
@@ -86,5 +90,9 @@ impl Scene {
 
     pub fn cubemap(&self) -> &Cubemap {
         &self.cubemap
+    }
+
+    pub fn duck(&self) -> &Duck {
+        &self.duck
     }
 }

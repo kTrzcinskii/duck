@@ -149,6 +149,7 @@ impl Cubemap {
 }
 
 pub fn load_cubemap(device: &wgpu::Device, queue: &wgpu::Queue) -> Result<wgpu::Texture> {
+    // TODO: try to make this path univeral, (meaning i can run from other directories, baked like with include_str)
     let paths = [
         "assets/textures/cubemap/px.png",
         "assets/textures/cubemap/nx.png",

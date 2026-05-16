@@ -1,5 +1,6 @@
 use crate::{
     camera::CameraBuffer,
+    duck::DuckBindGroup,
     light::LightBuffer,
     water::{compute::WaterComputeBindGroup, render::WaterRenderBindGroup},
 };
@@ -8,6 +9,7 @@ pub struct RendererBindGroupsLayout {
     global: wgpu::BindGroupLayout,
     water_render: wgpu::BindGroupLayout,
     water_compute: wgpu::BindGroupLayout,
+    duck: wgpu::BindGroupLayout,
 }
 
 impl RendererBindGroupsLayout {
@@ -16,6 +18,7 @@ impl RendererBindGroupsLayout {
             global: GlobalBindGroup::layout(device),
             water_render: WaterRenderBindGroup::layout(device),
             water_compute: WaterComputeBindGroup::layout(device),
+            duck: DuckBindGroup::layout(device),
         }
     }
 
@@ -29,6 +32,10 @@ impl RendererBindGroupsLayout {
 
     pub fn water_compute(&self) -> &wgpu::BindGroupLayout {
         &self.water_compute
+    }
+
+    pub fn duck(&self) -> &wgpu::BindGroupLayout {
+        &self.duck
     }
 }
 
