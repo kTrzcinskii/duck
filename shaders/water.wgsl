@@ -88,15 +88,19 @@ fn water_color(world_pos: vec3<f32>, reflect_dir: vec3<f32>, refract_dir: vec3<f
     return color;
 }
 
+const ambient_coefficient = 0.1;
+const diffuse_coefficient = 0.8;
+const specular_coefficient = 0.8;
+
 fn phong(water_color: vec4<f32>, normal: vec3<f32>, world_pos: vec3<f32>, view_dir: vec3<f32>) -> vec4<f32> {
     let light_dir = normalize(light.position.xyz - world_pos);
     let light_reflect_dir = reflect(-light_dir, normal);
 
-    let ambient = 0.1;
-    let diffuse = max(dot(normal, light_dir), 0.0);
-    let specular = pow(max(dot(view_dir, light_reflect_dir), 0.0), 64.0);
+    let ambient = ambient_coefficient;
+    let diffuse = max(dot(normal, light_dir), 0.0) * diffuse_coefficient;
+    let specular = pow(max(dot(view_dir, light_reflect_dir), 0.0), 64.0) * specular_coefficient;
 
-    return water_color * (ambient + diffuse) + light.color * specular * 0.8;
+    return water_color * (ambient + diffuse) + light.color * specular;
 }
 
 fn intersect_ray(origin: vec3<f32>, dir: vec3<f32>) -> vec3<f32> {

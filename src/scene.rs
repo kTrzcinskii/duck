@@ -42,7 +42,7 @@ impl Scene {
         );
         let cubemap = Cubemap::new(device, layouts, surface_format);
         let duck = Duck::new(device, layouts, surface_format, queue);
-        let light = Light::new(Vec3::new(0.0, 3.0, 0.0), Vec3::new(1.0, 1.0, 1.0));
+        let light = Light::new(Vec3::new(0.0, 1.5, 0.0), Vec3::new(1.0, 1.0, 1.0));
         Scene {
             water_simulation,
             water_surface,

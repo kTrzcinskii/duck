@@ -2,7 +2,7 @@ use std::mem;
 
 use anyhow::{Context, Result, bail};
 use bytemuck::{Pod, Zeroable};
-use glam::{Quat, Vec3};
+use glam::{Quat, Vec2, Vec3};
 use image::ImageReader;
 use log::error;
 use wgpu::util::DeviceExt;
@@ -289,6 +289,7 @@ impl Duck {
             vertices.push(DuckVertex {
                 position: [vertex_nums[0], vertex_nums[1], vertex_nums[2]],
                 normal: [vertex_nums[3], vertex_nums[4], vertex_nums[5]],
+                tangent: [0.0; 3],
                 tex_coords: [vertex_nums[6], vertex_nums[7]],
             });
         }
@@ -324,7 +325,59 @@ impl Duck {
             indices.extend_from_slice(&triangle_nums);
         }
 
-        Ok((vertices, indices))
+        Ok(Self::populate_tangents(vertices, indices))
+    }
+
+    fn populate_tangents(
+        mut vertices: Vec<DuckVertex>,
+        indices: Vec<u16>,
+    ) -> (Vec<DuckVertex>, Vec<u16>) {
+        const VERTICES_PER_TRIANGLE: usize = 3;
+        for chunk in indices.chunks(VERTICES_PER_TRIANGLE) {
+            let i0 = chunk[0] as usize;
+            let i1 = chunk[1] as usize;
+            let i2 = chunk[2] as usize;
+
+            let pos0 = Vec3::from_array(vertices[i0].position);
+            let pos1 = Vec3::from_array(vertices[i1].position);
+            let pos2 = Vec3::from_array(vertices[i2].position);
+
+            let uv0 = Vec2::from_array(vertices[i0].tex_coords);
+            let uv1 = Vec2::from_array(vertices[i1].tex_coords);
+            let uv2 = Vec2::from_array(vertices[i2].tex_coords);
+
+            let e1 = pos1 - pos0;
+            let e2 = pos2 - pos0;
+
+            let delta_uv1 = uv1 - uv0;
+            let delta_uv2 = uv2 - uv0;
+
+            let r = 1.0 / (delta_uv1.x * delta_uv2.y - delta_uv1.y * delta_uv2.x);
+            let tangent = Vec3::new(
+                r * (delta_uv2.y * e1.x - delta_uv1.y * e2.x),
+                r * (delta_uv2.y * e1.y - delta_uv1.y * e2.y),
+                r * (delta_uv2.y * e1.z - delta_uv1.y * e2.z),
+            );
+
+            vertices[i0].tangent = (Vec3::from_array(vertices[i0].tangent) + tangent).to_array();
+            vertices[i1].tangent = (Vec3::from_array(vertices[i1].tangent) + tangent).to_array();
+            vertices[i2].tangent = (Vec3::from_array(vertices[i2].tangent) + tangent).to_array();
+        }
+
+        for vertex in &mut vertices {
+            let n = Vec3::from_array(vertex.normal);
+            let t = Vec3::from_array(vertex.tangent);
+
+            let t_ortho = (t - n * n.dot(t)).normalize();
+
+            vertex.tangent = if t_ortho.is_nan() {
+                [0.0, 0.0, 0.0]
+            } else {
+                t_ortho.to_array()
+            };
+        }
+
+        (vertices, indices)
     }
 
     fn model_scale() -> Vec3 {
@@ -337,6 +390,7 @@ impl Duck {
 pub struct DuckVertex {
     pub position: [f32; 3],
     pub normal: [f32; 3],
+    pub tangent: [f32; 3],
     pub tex_coords: [f32; 2],
 }
 
@@ -359,6 +413,11 @@ impl DuckVertex {
                 wgpu::VertexAttribute {
                     offset: mem::size_of::<[f32; 6]>() as wgpu::BufferAddress,
                     shader_location: 2,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 9]>() as wgpu::BufferAddress,
+                    shader_location: 3,
                     format: wgpu::VertexFormat::Float32x2,
                 },
             ],
