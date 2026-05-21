@@ -3,7 +3,6 @@ use std::mem;
 use anyhow::{Context, Result, bail};
 use bytemuck::{Pod, Zeroable};
 use glam::{Quat, Vec2, Vec3};
-use image::ImageReader;
 use log::error;
 use wgpu::util::DeviceExt;
 
@@ -426,10 +425,8 @@ impl DuckVertex {
 }
 
 fn load_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> Result<wgpu::Texture> {
-    // TODO: try to make this path univeral, (meaning i can run from other directories, baked like with include_str)
-    let img = ImageReader::open("assets/textures/ducktex.jpg")?
-        .decode()?
-        .to_rgba8();
+    let img_bytes = include_bytes!("../../assets/textures/ducktex.jpg");
+    let img = image::load_from_memory(img_bytes)?.to_rgba8();
 
     let (width, height) = img.dimensions();
 

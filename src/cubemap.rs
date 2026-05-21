@@ -2,7 +2,6 @@ use std::mem;
 
 use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
-use image::ImageReader;
 use wgpu::util::DeviceExt;
 
 use crate::bind_groups::RendererBindGroupsLayout;
@@ -149,19 +148,18 @@ impl Cubemap {
 }
 
 pub fn load_cubemap(device: &wgpu::Device, queue: &wgpu::Queue) -> Result<wgpu::Texture> {
-    // TODO: try to make this path univeral, (meaning i can run from other directories, baked like with include_str)
-    let paths = [
-        "assets/textures/cubemap/px.png",
-        "assets/textures/cubemap/nx.png",
-        "assets/textures/cubemap/py.png",
-        "assets/textures/cubemap/ny.png",
-        "assets/textures/cubemap/pz.png",
-        "assets/textures/cubemap/nz.png",
+    let image_bytes = [
+        include_bytes!("../assets/textures/cubemap/px.png").as_slice(),
+        include_bytes!("../assets/textures/cubemap/nx.png").as_slice(),
+        include_bytes!("../assets/textures/cubemap/py.png").as_slice(),
+        include_bytes!("../assets/textures/cubemap/ny.png").as_slice(),
+        include_bytes!("../assets/textures/cubemap/pz.png").as_slice(),
+        include_bytes!("../assets/textures/cubemap/nz.png").as_slice(),
     ];
 
-    let mut images = Vec::with_capacity(paths.len());
-    for path in paths {
-        let img = ImageReader::open(path)?.decode()?.to_rgba8();
+    let mut images = Vec::with_capacity(image_bytes.len());
+    for bytes in image_bytes {
+        let img = image::load_from_memory(bytes)?.to_rgba8();
         images.push(img);
     }
 
